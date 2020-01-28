@@ -137,6 +137,20 @@ signing {
   sign publishing.publications.mavenJava
 }
 
+task generatePomPropertiesFile {
+    inputs.properties ([
+            'version': "${ -> project.version }",
+            'groupId': "${ -> project.groupId }",
+            'artifactId': "${ -> project.name }"
+    ])
+    outputs.file "$project.buildDir/generatePomPropertiesFile/pom.properties"
+    doLast {
+        File file = outputs.files.singleFile
+        file.parentFile.mkdirs()
+        file << inputs.properties.collect{ key, value -> "$key: $value" }.join('\n')
+    }
+}
+
 jar {
   manifest {
     attributes(
@@ -147,7 +161,14 @@ jar {
       'Implementation-Version': project.version
     )
   }
+
+  into("META-INF/maven/$project.groupId/$project.name") {
+    from generatePomFileForMavenJavaPublication
+        rename ".*.xml", "pom.xml"
+        from generatePomPropertiesFile
+      }
 }
+
 
 spotless {
   java {
